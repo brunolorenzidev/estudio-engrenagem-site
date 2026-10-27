@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Estúdio Engrenagem</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Reels 3D de estúdio feitos pelo Claude. Você diz o tema; ele pesquisa, escreve o roteiro, grava a narração, anima a cena 3D e entrega o vídeo pronto.">
+<meta property="og:title" content="Estúdio Engrenagem — Reels 3D de estúdio. Você só diz o tema.">
+<meta property="og:description" content="Kit para o Claude que transforma um tema em reel 3D pronto para postar.">
+<meta property="og:image" content="img/og.jpg">
+<meta name="theme-color" content="#03060d">
+<link rel="icon" type="image/png" href="img/favicon.png">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: estúdio de cinema à noite — canvas de poeira no ar e feixes de luz fixos ao fundo; conteúdo em faixas largas por cima */
+:root {
+  --bg: #03060d; --bg2: #08101c; --card: #0c1626; --line: #16243a;
+  --fg: #eef4ff; --mute: #92a3bd; --dim: #5a6b85;
+  --blue: #0A6CFF; --cyan: #00C2FF; --accent: #19A8FF; --ink: #001428; --warn: #FFB020;
+  --grad: linear-gradient(120deg, #0A6CFF 0%, #00C2FF 100%);
+  --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body: "Figtree", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--fg); font: 400 17px/1.6 var(--body); margin: 0; overflow-x: hidden; }
+::selection { background: var(--blue); color: #fff; }
+
+/* fundo do estúdio */
+#poeira { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+.feixes { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.feixe { position: absolute; top: -20vh; width: 38vw; height: 150vh; background: linear-gradient(180deg, rgba(25,168,255,.16), rgba(25,168,255,0) 70%); filter: blur(40px); transform-origin: 50% 0; mix-blend-mode: screen; }
+.feixe.f1 { left: 8vw; transform: rotate(18deg); animation: balanca 14s ease-in-out infinite alternate; }
+.feixe.f2 { right: 4vw; transform: rotate(-22deg); animation: balanca2 18s ease-in-out infinite alternate; background: linear-gradient(180deg, rgba(10,108,255,.18), rgba(10,108,255,0) 70%); }
+.feixe.f3 { left: 42vw; width: 20vw; transform: rotate(-4deg); opacity: .6; animation: balanca 22s ease-in-out infinite alternate-reverse; }
+@keyframes balanca { from { transform: rotate(14deg); } to { transform: rotate(24deg); } }
+@keyframes balanca2 { from { transform: rotate(-16deg); } to { transform: rotate(-28deg); } }
+.vinheta { position: fixed; inset: 0; z-index: 0; pointer-events: none; background: radial-gradient(120% 80% at 50% 0%, transparent 40%, rgba(0,0,0,.55) 100%); }
+main, header, footer { position: relative; z-index: 1; }
+
+.wrap { max-width: 1140px; margin: 0 auto; padding-left: max(18px, env(safe-area-inset-left, 0px)); padding-right: max(18px, env(safe-area-inset-right, 0px)); }
+section { padding-block: 96px; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; letter-spacing: -0.02em; }
+h1 { font-size: clamp(40px, 6.4vw, 74px); line-height: .96; font-weight: 800; }
+h2 { font-size: clamp(31px, 4.6vw, 52px); line-height: 1.03; font-weight: 800; }
+h3 { font-size: 21px; font-weight: 600; line-height: 1.2; }
+p { margin: 0; }
+.grad { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.eyebrow { font: 700 12px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--cyan); display: inline-flex; align-items: center; gap: 10px; }
+.eyebrow::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 14px var(--cyan); animation: rec 2s ease-in-out infinite; }
+@keyframes rec { 50% { opacity: .35; } }
+.lead { font-size: clamp(18px, 2vw, 21px); color: var(--mute); max-width: 60ch; }
+.mt { margin-top: 18px; }
+
+/* botões */
+.btn { position: relative; overflow: hidden; display: inline-flex; align-items: center; gap: 10px; background: var(--grad); color: #fff; font: 700 17px/1 var(--body); padding: 18px 28px; border-radius: 999px; text-decoration: none; border: 0; cursor: pointer; box-shadow: 0 10px 40px -12px rgba(10,108,255,.8); transition: transform .2s, box-shadow .2s; }
+.btn::after { content: ""; position: absolute; top: 0; left: -60%; width: 40%; height: 100%; background: linear-gradient(100deg, transparent, rgba(255,255,255,.45), transparent); transform: skewX(-20deg); animation: brilho 4.5s ease-in-out infinite; }
+@keyframes brilho { 0%, 60% { left: -60%; } 100% { left: 130%; } }
+.btn:hover { transform: translateY(-2px); box-shadow: 0 16px 50px -12px rgba(0,194,255,.9); }
+.btn .seta { transition: transform .2s; } .btn:hover .seta { transform: translateX(4px); }
+.btn.ghost { background: rgba(255,255,255,.03); color: var(--fg); border: 1px solid var(--line); box-shadow: none; backdrop-filter: blur(6px); }
+.btn.ghost::after { display: none; }
+.btn.ghost:hover { border-color: var(--accent); }
+a:focus-visible, .btn:focus-visible, summary:focus-visible { outline: 3px solid var(--cyan); outline-offset: 3px; }
+
+/* topo */
+header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; backdrop-filter: blur(14px); background: rgba(3,6,13,.6); border-bottom: 1px solid rgba(22,36,58,.6); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 21; background: var(--bg); }
+.bar { display: flex; justify-content: space-between; align-items: center; padding-block: 14px; }
+.marca { display: flex; align-items: center; gap: 12px; font: 700 13px var(--mono); letter-spacing: .14em; color: var(--fg); text-decoration: none; }
+.marca img { width: 34px; height: 34px; filter: drop-shadow(0 0 10px rgba(0,194,255,.5)); }
+.marca:hover img { animation: gira 1.2s cubic-bezier(.6,0,.3,1); }
+@keyframes gira { to { transform: rotate(60deg); } }
+nav { display: flex; gap: 26px; align-items: center; }
+nav a { color: var(--mute); text-decoration: none; font-size: 15px; font-weight: 600; } nav a:hover { color: var(--fg); }
+nav .btn { padding: 11px 18px; font-size: 14px; color: #fff; }
+@media (max-width: 760px) { nav a:not(.btn) { display: none; } }
+
+/* hero */
+.hero { padding-block: 64px 80px; }
+.hero .grid { display: grid; grid-template-columns: 1.05fr 1fr; gap: 40px; align-items: center; }
+.hero .grid > * { min-width: 0; }
+.logo-hero { width: 76px; height: 76px; filter: drop-shadow(0 0 24px rgba(0,194,255,.55)); animation: respira 6s ease-in-out infinite; }
+@keyframes respira { 50% { filter: drop-shadow(0 0 40px rgba(0,194,255,.85)); transform: rotate(8deg); } }
+.hero h1 { margin-top: 22px; }
+.hero .lead { margin-top: 24px; }
+.ctas { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+.note { margin-top: 16px; font-size: 14px; color: var(--dim); }
+.rec { display: inline-flex; gap: 8px; align-items: center; font: 700 11px var(--mono); letter-spacing: .14em; color: #ff5a5a; margin-left: 4px; }
+.rec i { width: 8px; height: 8px; border-radius: 50%; background: #ff3b3b; animation: rec 1.2s infinite; }
+
+.palco { position: relative; height: 600px; perspective: 1400px; }
+.phone { position: absolute; width: 45%; aspect-ratio: 9/16; border-radius: 30px; overflow: hidden; border: 6px solid #0f1a2b; background: #000; box-shadow: 0 50px 90px -30px #000, 0 0 0 1px #1e3150, 0 0 60px -10px rgba(10,108,255,.35); }
+.phone img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 1.1s ease; }
+.phone img.on { opacity: 1; }
+.phone::after { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, rgba(255,255,255,.12) 0%, transparent 30%); pointer-events: none; }
+.phone.a { left: 0; top: 70px; --r: -7deg; animation: flutua 7s ease-in-out infinite; }
+.phone.b { left: 27.5%; top: 0; z-index: 2; --r: 0deg; animation: flutua 8s ease-in-out infinite .8s; }
+.phone.c { right: 0; top: 90px; --r: 7deg; animation: flutua 7.5s ease-in-out infinite 1.6s; }
+@keyframes flutua { 0%, 100% { transform: rotate(var(--r)) translateY(0); } 50% { transform: rotate(var(--r)) translateY(-14px); } }
+.chao { position: absolute; left: 5%; right: 5%; bottom: -6px; height: 60px; background: radial-gradient(closest-side, rgba(0,194,255,.35), transparent); filter: blur(10px); }
+
+/* faixa de prova */
+.proof { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); border-radius: 20px; overflow: hidden; margin-top: 56px; background: rgba(8,16,28,.7); backdrop-filter: blur(8px); }
+.proof div { padding: 26px; border-left: 1px solid var(--line); }
+.proof div:first-child { border-left: 0; }
+.proof b { display: block; font: 800 36px/1 var(--display); font-variant-numeric: tabular-nums; }
+.proof .leg { color: var(--mute); font-size: 15px; display: block; margin-top: 8px; }
+
+/* como funciona */
+.how { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; margin-top: 44px; align-items: start; }
+.how > * { min-width: 0; }
+.chat { background: rgba(8,16,28,.8); border: 1px solid var(--line); border-radius: 22px; padding: 22px; display: flex; flex-direction: column; gap: 12px; backdrop-filter: blur(8px); }
+.chat .top { display: flex; gap: 6px; margin-bottom: 4px; } .chat .top i { width: 10px; height: 10px; border-radius: 50%; background: #1d2b42; }
+.msg { max-width: 88%; padding: 12px 16px; border-radius: 16px; font-size: 15px; line-height: 1.5; }
+.msg small { display: block; font: 700 10px var(--mono); letter-spacing: .12em; opacity: .75; margin-bottom: 4px; }
+.msg.me { align-self: flex-end; background: var(--grad); color: #fff; border-bottom-right-radius: 4px; }
+.msg.ai { background: var(--card); border-bottom-left-radius: 4px; }
+.digitando { display: inline-flex; gap: 4px; padding: 14px 16px; background: var(--card); border-radius: 16px; width: fit-content; }
+.digitando i { width: 6px; height: 6px; border-radius: 50%; background: var(--mute); animation: pula 1.2s infinite; } .digitando i:nth-child(2) { animation-delay: .15s; } .digitando i:nth-child(3) { animation-delay: .3s; }
+@keyframes pula { 0%, 60%, 100% { transform: translateY(0); opacity: .5; } 30% { transform: translateY(-5px); opacity: 1; } }
+.steps { list-style: none; margin: 0; padding: 0; counter-reset: s; position: relative; }
+.steps::before { content: ""; position: absolute; left: 21px; top: 10px; bottom: 10px; width: 2px; background: linear-gradient(var(--blue), var(--cyan), transparent); opacity: .5; }
+.steps li { counter-increment: s; display: grid; grid-template-columns: 44px 1fr; gap: 16px; padding: 12px 0; }
+.steps li::before { content: counter(s); width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; font: 700 15px var(--mono); color: #fff; background: var(--card); border: 1px solid var(--line); position: relative; z-index: 1; }
+.steps li:hover::before { background: var(--grad); border-color: transparent; }
+.steps b { display: block; font-weight: 700; padding-top: 2px; } .steps span { color: var(--mute); font-size: 15px; }
+.pause { font: 700 10px var(--mono); color: var(--warn); letter-spacing: .1em; margin-left: 8px; border: 1px solid rgba(255,176,32,.4); padding: 2px 6px; border-radius: 6px; vertical-align: 2px; }
+
+/* esteira de reels */
+.esteira { margin-top: 44px; overflow: hidden; -webkit-mask: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); mask: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
+.trilho { display: flex; gap: 16px; width: max-content; animation: corre 60s linear infinite; }
+.esteira:hover .trilho { animation-play-state: paused; }
+@keyframes corre { to { transform: translateX(calc(-50% - 8px)); } }
+.trilho figure { margin: 0; width: 200px; flex: 0 0 auto; }
+.trilho img { width: 100%; aspect-ratio: 9/16; object-fit: cover; border-radius: 18px; display: block; border: 1px solid var(--line); transition: transform .3s, box-shadow .3s; }
+.trilho figure:hover img { transform: translateY(-6px) scale(1.02); box-shadow: 0 20px 40px -14px rgba(0,194,255,.5); }
+.trilho figcaption { font-size: 13px; color: var(--dim); margin-top: 8px; }
+
+/* comparação */
+.tbl-wrap { overflow-x: auto; margin-top: 40px; border: 1px solid var(--line); border-radius: 20px; background: rgba(8,16,28,.75); backdrop-filter: blur(8px); }
+table { width: 100%; border-collapse: collapse; min-width: 660px; font-size: 15px; }
+th, td { padding: 16px 18px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 700 12px var(--mono); letter-spacing: .08em; color: var(--mute); text-transform: uppercase; }
+th.us { color: #fff; background: var(--grad); }
+td.us { background: rgba(10,108,255,.08); color: var(--fg); font-weight: 600; }
+td { color: var(--mute); } td:first-child { color: var(--fg); font-weight: 600; width: 20%; }
+tr:last-child td { border-bottom: 0; }
+
+/* estilos */
+.styles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; margin-top: 44px; }
+.styles > div { min-width: 0; }
+.styles .foto { border-radius: 18px; overflow: hidden; border: 1px solid var(--line); position: relative; }
+.styles img { width: 100%; aspect-ratio: 9/13; object-fit: cover; object-position: top; display: block; transition: transform .6s ease; }
+.styles .foto:hover img { transform: scale(1.05); }
+.styles h3 { margin-top: 16px; } .styles p { color: var(--mute); font-size: 15px; margin-top: 4px; }
+.swatches { display: flex; gap: 10px; margin-top: 30px; flex-wrap: wrap; align-items: center; color: var(--mute); font-size: 15px; }
+.swatches i { width: 28px; height: 28px; border-radius: 50%; display: inline-block; box-shadow: 0 0 0 2px var(--bg), 0 0 0 3px var(--line); transition: transform .2s; }
+.swatches i:hover { transform: scale(1.2); }
+
+/* biblioteca */
+.pieces { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 44px; }
+.piece { position: relative; padding: 24px; border-radius: 18px; background: rgba(8,16,28,.75); border: 1px solid var(--line); overflow: hidden; min-width: 0; transition: border-color .3s, transform .3s; }
+.piece::before { content: ""; position: absolute; inset: 0; background: radial-gradient(300px circle at var(--mx, 50%) var(--my, 0%), rgba(0,194,255,.14), transparent 60%); opacity: 0; transition: opacity .3s; }
+.piece:hover { border-color: rgba(0,194,255,.5); transform: translateY(-3px); } .piece:hover::before { opacity: 1; }
+.piece svg { width: 34px; height: 34px; stroke: var(--cyan); fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; margin-bottom: 14px; }
+.piece b { font-family: var(--display); font-size: 19px; font-weight: 600; display: block; } .piece p { color: var(--mute); font-size: 15px; margin-top: 4px; }
+
+/* o que vem */
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; margin-top: 44px; }
+.two > * { min-width: 0; }
+.check { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+.check li { padding-left: 34px; position: relative; }
+.check li::before { content: "✓"; position: absolute; left: 0; top: 2px; width: 22px; height: 22px; border-radius: 7px; background: var(--grad); color: #fff; font: 800 13px/22px var(--body); text-align: center; }
+.check li span { display: block; color: var(--mute); font-size: 15px; }
+.req { background: rgba(8,16,28,.8); border: 1px solid var(--line); border-radius: 20px; padding: 28px; backdrop-filter: blur(8px); }
+.req h3 { margin-bottom: 18px; }
+.req dl { margin: 0; display: grid; gap: 16px; }
+.req dt { font-weight: 700; } .req dd { margin: 2px 0 0; color: var(--mute); font-size: 15px; }
+
+/* preços */
+.prices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; margin-top: 48px; align-items: stretch; }
+.plan { background: rgba(8,16,28,.85); border: 1px solid var(--line); border-radius: 24px; padding: 30px; display: flex; flex-direction: column; gap: 18px; min-width: 0; position: relative; backdrop-filter: blur(8px); }
+.plan.top { border: 0; isolation: isolate; transform: translateY(-8px); }
+.plan.top::before { content: ""; position: absolute; inset: -1.5px; border-radius: 25px; z-index: -2; background: conic-gradient(from var(--ang), #0A6CFF, #00C2FF, #0A6CFF 40%, #16243a 55%, #0A6CFF); animation: anel 5s linear infinite; }
+.plan.top::after { content: ""; position: absolute; inset: 0; border-radius: 24px; z-index: -1; background: #07101d; }
+@property --ang { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
+@keyframes anel { to { --ang: 360deg; } }
+.plan .tag { position: absolute; top: -13px; left: 30px; background: var(--grad); color: #fff; font: 700 11px var(--mono); letter-spacing: .12em; padding: 6px 12px; border-radius: 999px; }
+.price { font: 800 50px/1 var(--display); letter-spacing: -0.03em; }
+.price small { font: 500 15px var(--body); color: var(--mute); letter-spacing: 0; }
+.plan .check { gap: 11px; font-size: 15px; flex: 1; }
+.plan .btn { justify-content: center; }
+.guarantee { display: grid; grid-template-columns: auto 1fr; gap: 22px; align-items: center; margin-top: 34px; background: rgba(8,16,28,.8); border: 1px solid var(--line); border-radius: 20px; padding: 22px 28px; }
+.guarantee b { font: 800 42px/1 var(--display); }
+.guarantee p { color: var(--mute); }
+
+/* faq */
+.faq { margin-top: 34px; display: grid; gap: 10px; }
+details { background: rgba(8,16,28,.8); border: 1px solid var(--line); border-radius: 16px; padding: 18px 22px; transition: border-color .2s; }
+details[open] { border-color: rgba(0,194,255,.45); }
+summary { cursor: pointer; font-weight: 700; list-style: none; display: flex; justify-content: space-between; gap: 16px; }
+summary::-webkit-details-marker { display: none; }
+summary::after { content: "+"; color: var(--cyan); font: 700 22px/1 var(--mono); transition: transform .25s; }
+details[open] summary::after { transform: rotate(45deg); }
+details p { color: var(--mute); margin-top: 10px; font-size: 16px; }
+
+.final { text-align: center; padding-block: 120px; }
+.final img { width: 96px; height: 96px; filter: drop-shadow(0 0 30px rgba(0,194,255,.6)); animation: girando 30s linear infinite; }
+@keyframes girando { to { transform: rotate(360deg); } }
+.final h2 { margin: 26px auto 30px; max-width: 18ch; }
+footer { border-top: 1px solid var(--line); padding-block: 28px 44px; color: var(--dim); font-size: 13px; }
+footer .wrap { display: flex; gap: 16px; justify-content: space-between; flex-wrap: wrap; }
+
+/* entrada ao rolar (só para o que ainda não apareceu) */
+.js .sobe.espera { opacity: 0; transform: translateY(26px); }
+.sobe { transition: opacity .8s ease, transform .8s cubic-bezier(.2,.7,.2,1); }
+
+@media (max-width: 880px) {
+  .hero .grid, .how, .two { grid-template-columns: 1fr; }
+  .palco { height: 460px; max-width: 470px; margin: 0 auto; width: 100%; }
+  .prices, .styles, .pieces, .proof { grid-template-columns: 1fr; }
+  .proof div { border-left: 0; border-top: 1px solid var(--line); } .proof div:first-child { border-top: 0; }
+  .plan.top { transform: none; }
+  section { padding-block: 68px; }
+  .styles img { aspect-ratio: 1/1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .js .sobe.espera { opacity: 1; transform: none; }
+}
+</style>
+</head>
+<body>
+<canvas id="poeira" aria-hidden="true"></canvas>
+<div class="feixes" aria-hidden="true"><div class="feixe f1"></div><div class="feixe f2"></div><div class="feixe f3"></div></div>
+<div class="vinheta" aria-hidden="true"></div>
+
+<header>
+  <div class="wrap bar">
+    <a class="marca" href="#topo"><img src="img/logo.png" alt="">ESTÚDIO ENGRENAGEM</a>
+    <nav><a href="#como">Como funciona</a><a href="#estilos">Estilos</a><a href="#faq">Dúvidas</a><a class="btn" href="#precos">Comprar</a></nav>
+  </div>
+</header>
+
+<main id="topo">
+<section class="hero">
+  <div class="wrap grid">
+    <div>
+      <img class="logo-hero" src="img/logo.png" alt="Logo Estúdio Engrenagem">
+      <h1>Reels 3D de estúdio.<br><span class="grad">Você só diz o tema.</span></h1>
+      <p class="lead">Você instala o Estúdio Engrenagem no seu Claude e pede: "faz um vídeo sobre por que o elevador não despenca". Ele pesquisa, escreve o roteiro com gancho, grava a narração com voz real, anima a cena 3D, revisa os erros e entrega o reel pronto com a legenda do post.</p>
+      <div class="ctas">
+        <a class="btn" href="#precos">Quero o meu estúdio <span class="seta" aria-hidden="true">→</span></a>
+        <a class="btn ghost" href="#como">Ver como funciona</a>
+      </div>
+      <p class="note">Windows e Mac · sem editor de vídeo · sem programar <span class="rec"><i></i>REC</span></p>
+    </div>
+    <div class="palco" aria-label="Quadros de reels feitos com o estúdio">
+      <div class="phone a" data-troca><img class="on" src="img/dolar-000.jpg" alt="Reel sobre o dólar"><img src="img/dolar-002.jpg" alt=""><img src="img/dolar-005.jpg" alt=""></div>
+      <div class="phone b" data-troca><img class="on" src="img/buraco-003.jpg" alt="Reel sobre um buraco que atravessa a Terra"><img src="img/buraco-000.jpg" alt=""><img src="img/buraco-005.jpg" alt=""></div>
+      <div class="phone c" data-troca><img class="on" src="img/elevador-002.jpg" alt="Reel sobre elevador"><img src="img/elevador-000.jpg" alt=""><img src="img/elevador-007.jpg" alt=""></div>
+      <div class="chao"></div>
+    </div>
+  </div>
+  <div class="wrap">
+    <div class="proof sobe">
+      <div><b><span data-conta="100">100</span> mil+</b><span class="leg">visualizações em reels feitos com este estúdio no @engrenagem.br</span></div>
+      <div><b>1080×1920</b><span class="leg">vertical, 24 quadros por segundo, legenda palavra por palavra</span></div>
+      <div><b>1 frase</b><span class="leg">é tudo o que você escreve. O resto é com o estúdio.</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="como">
+  <div class="wrap">
+    <span class="eyebrow">Como funciona</span>
+    <h2 class="mt">Uma conversa. <span class="grad">Um reel pronto.</span></h2>
+    <div class="how">
+      <div class="chat sobe" aria-label="Exemplo de conversa">
+        <div class="top"><i></i><i></i><i></i></div>
+        <div class="msg me"><small>VOCÊ</small>/video por que o elevador não despenca</div>
+        <div class="msg ai"><small>CLAUDE</small>Pesquisei. Ângulo mais forte: nem se todos os cabos arrebentarem ele cai, por causa do freio de segurança. Roteiro de 62 s com o gancho <b>"E se todos os cabos arrebentarem?"</b>. Posso gravar a narração?</div>
+        <div class="msg me"><small>VOCÊ</small>pode</div>
+        <div class="msg ai"><small>CLAUDE</small>Prévia pronta: cabine, cabos, regulador e cunhas, com a câmera seguindo a queda. Posso renderizar?</div>
+        <div class="msg me"><small>VOCÊ</small>manda</div>
+        <div class="msg ai"><small>CLAUDE</small>Entregue: final.mp4, capa e legenda do post com fontes. Conferi a física, 30 quadros e a sincronia da legenda.</div>
+        <div class="digitando" aria-hidden="true"><i></i><i></i><i></i></div>
+      </div>
+      <ol class="steps sobe">
+        <li><div><b>Pesquisa com fonte</b><span>Busca na web, acha o ângulo que surpreende e guarda as fontes.</span></div></li>
+        <li><div><b>Roteiro com gancho <span class="pause">VOCÊ APROVA</span></b><span>Cinco opções de gancho, estrutura de 45 a 65 segundos, uma CTA.</span></div></li>
+        <li><div><b>Narração com voz real</b><span>ElevenLabs, com o tempo de cada palavra para a legenda.</span></div></li>
+        <li><div><b>Cena 3D <span class="pause">VOCÊ APROVA</span></b><span>Objetos realistas, cortes de câmera, física correta, a cor da sua marca.</span></div></li>
+        <li><div><b>Revisão automática</b><span>Caça objeto atravessando outro, câmera dentro de objeto, piscadas, texto cortado.</span></div></li>
+        <li><div><b>Entrega</b><span>Vídeo, capa e legenda com gancho, hashtags e fontes.</span></div></li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <span class="eyebrow">Feito com o estúdio</span>
+    <h2 class="mt">Ciência, economia, notícia. <span class="grad">Tudo em 3D.</span></h2>
+  </div>
+  <div class="esteira" aria-label="Quadros de reels">
+    <div class="trilho">
+      <figure><img src="img/elevador-000.jpg" alt="Elevador: freio de segurança"><figcaption>Por que o elevador não despenca</figcaption></figure>
+      <figure><img src="img/dolar-002.jpg" alt="Dominós vermelhos caindo"><figcaption>O que sobe quando o dólar sobe</figcaption></figure>
+      <figure><img src="img/buraco-000.jpg" alt="Terra em corte"><figcaption>E se você pulasse num buraco na Terra?</figcaption></figure>
+      <figure><img src="img/elevador-005.jpg" alt="Elevador histórico de 1854"><figcaption>A demonstração de 1854</figcaption></figure>
+      <figure><img src="img/dolar-005.jpg" alt="Corrente de dominós até o pão"><figcaption>Do dólar ao pão</figcaption></figure>
+      <figure><img src="img/buraco-005.jpg" alt="Oscilação dentro da Terra"><figcaption>Indo e voltando pra sempre</figcaption></figure>
+      <figure><img src="img/elevador-007.jpg" alt="Poço do elevador"><figcaption>3 camadas de segurança</figcaption></figure>
+      <figure><img src="img/dolar-003.jpg" alt="Dominós laranja"><figcaption>O que leva semanas</figcaption></figure>
+      <figure><img src="img/buraco-003.jpg" alt="Velocidade no centro da Terra"><figcaption>28 mil km/h no centro</figcaption></figure>
+      <figure><img src="img/elevador-002.jpg" alt="Regulador de velocidade"><figcaption>O regulador</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <span class="eyebrow">Por que é diferente</span>
+    <h2 class="mt">Não é um pacote de prompts.<br><span class="grad">É um estúdio no seu computador.</span></h2>
+    <div class="tbl-wrap sobe">
+      <table>
+        <thead><tr><th></th><th>Pacote de prompts</th><th>Gerador de vídeo com IA</th><th class="us">Estúdio Engrenagem</th></tr></thead>
+        <tbody>
+          <tr><td>Voz e legenda</td><td>Você gera a voz em outro site e cola</td><td>Voz pronta, legenda genérica</td><td class="us">Voz real gerada sozinha, legenda sincronizada palavra por palavra</td></tr>
+          <tr><td>Animação</td><td>Você monta no editor</td><td>Clipes de IA que mudam de um corte para o outro</td><td class="us">3D de verdade: objetos consistentes, física correta, câmera de cinema</td></tr>
+          <tr><td>Roteiro</td><td>Modelo fixo</td><td>Texto genérico</td><td class="us">Pesquisa com fonte e gancho escolhido entre cinco</td></tr>
+          <tr><td>Revisão</td><td>Você confere tudo</td><td>Nenhuma</td><td class="us">Caça-bugs automático antes de entregar</td></tr>
+          <tr><td>Identidade</td><td>—</td><td>Estilo da plataforma</td><td class="us">Seu nome, sua cor, três estilos visuais</td></tr>
+          <tr><td>Custo por vídeo</td><td>Seu tempo de edição</td><td>Créditos por vídeo</td><td class="us">Só a voz (cerca de 1.000 créditos do ElevenLabs por minuto)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="estilos">
+  <div class="wrap">
+    <span class="eyebrow">Sua marca</span>
+    <h2 class="mt">Três estilos. <span class="grad">A cor que você escolher.</span></h2>
+    <p class="lead mt">No primeiro uso, o comando /configurar pergunta seu nome, sua cor e o estilo. Tudo tem um padrão bom, e você muda quando quiser com uma frase.</p>
+    <div class="styles">
+      <div class="sobe"><div class="foto"><img src="img/est-cinema.jpg" alt="Estilo cinema: cubo com reflexo no piso espelhado"></div><h3>Cinema</h3><p>Piso espelhado de mármore, reflexos, desfoque de lente. O mais impressionante.</p></div>
+      <div class="sobe"><div class="foto"><img src="img/est-simples.jpg" alt="Estilo simples: cubo em piso fosco escuro"></div><h3>Simples</h3><p>3D limpo e fosco. Renderiza cerca de duas vezes mais rápido.</p></div>
+      <div class="sobe"><div class="foto"><img src="img/est-minimal.jpg" alt="Estilo minimal: cubo em fundo liso"></div><h3>Minimal</h3><p>Infográfico 3D em fundo liso. Ideal para dados e números.</p></div>
+    </div>
+    <div class="swatches"><i style="background:#2DD4FF"></i><i style="background:#0A6CFF"></i><i style="background:#22E584"></i><i style="background:#FFD23F"></i><i style="background:#FF8A3D"></i><i style="background:#FF4D8D"></i><i style="background:#9B7BFF"></i><span>ou qualquer cor da sua marca</span></div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <span class="eyebrow">Biblioteca de cenas</span>
+    <h2 class="mt">Peças prontas que <span class="grad">contam a ideia sozinhas</span></h2>
+    <p class="lead mt">Testadas em vídeos reais. O Claude escolhe a peça certa para cada frase do roteiro.</p>
+    <div class="pieces">
+      <div class="piece sobe"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 12h18M9 6v12M15 6v12"/></svg><b>Placa de aeroporto</b><p>Números e palavras que viram letra a letra. Cotação, placar, contagem.</p></div>
+      <div class="piece sobe"><svg viewBox="0 0 24 24"><path d="M9 3h6v5H9zM7 8h10v3H7zM5 14h14v6H5z"/></svg><b>Papel e carimbo</b><p>O carimbo desce e bate na palavra certa. Decisão, lei, multa.</p></div>
+      <div class="piece sobe"><svg viewBox="0 0 24 24"><path d="M4 18a8 8 0 0 1 16 0M2 18h20M10 9l2 3 2-2"/></svg><b>Redoma de vidro</b><p>Estilhaça em câmera lenta. Proteção que acaba, segredo revelado.</p></div>
+      <div class="piece sobe"><svg viewBox="0 0 24 24"><path d="M3 4h4v4H3zM10 4h4v4h-4zM17 4h4v4h-4zM3 11h4v4H3zM10 11h4v4h-4zM17 11h4v4h-4zM6 18h4v3H6zM14 18h4v3h-4z"/></svg><b>Muro de cubos</b><p>Milhares de cubos montam o total e a parte que cai acende. Votos, pessoas.</p></div>
+      <div class="piece sobe"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="6" height="18" rx="3"/><rect x="14" y="3" width="6" height="18" rx="3"/><path d="M4 13h6M14 9h6"/></svg><b>Colunas de vidro</b><p>Enchem na palavra do número. Porcentagem e comparação.</p></div>
+      <div class="piece sobe"><svg viewBox="0 0 24 24"><path d="M3 21V13h6v8M9 21V8h6v13M15 21v-6h6v6"/></svg><b>Pódio, cartões, moeda</b><p>Virada de ranking, foto com nome, moeda que cai rodando e deita.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <span class="eyebrow">O que você recebe</span>
+    <h2 class="mt">Tudo para <span class="grad">sair postando hoje</span></h2>
+    <div class="two">
+      <ul class="check sobe">
+        <li>O estúdio completo<span>Motor 3D, três estilos, revisão automática e montagem do vídeo.</span></li>
+        <li>Seis comandos para o Claude<span>/video, /roteiro, /cena, /revisar, /legenda e /configurar.</span></li>
+        <li>O método de gancho e retenção<span>As regras que o estúdio segue para prender nos primeiros três segundos.</span></li>
+        <li>Três episódios de exemplo com narração<span>Para ver o estúdio rodando no seu computador sem gastar crédito de voz.</span></li>
+        <li>Guia de instalação em PDF<span>Passo a passo com imagens para Windows e Mac. Instalador de dois cliques.</span></li>
+        <li>Bônus: 50 temas e 30 ganchos<span>Temas que rendem reels 3D, com a metáfora visual sugerida (planos Completo e Pro).</span></li>
+      </ul>
+      <div class="req sobe">
+        <h3>Do que você precisa</h3>
+        <dl>
+          <div><dt>Claude Pro ou Max</dt><dd>O plano pago do Claude inclui o Claude Code, que opera o estúdio no app para computador.</dd></div>
+          <div><dt>ElevenLabs (voz)</dt><dd>Para postar e monetizar, um plano pago a partir do Starter. O plano grátis não permite uso comercial.</dd></div>
+          <div><dt>Computador</dt><dd>Windows 10/11 ou Mac, 8 GB de RAM, 3 GB livres. Placa de vídeo deixa o render mais rápido, mas não é obrigatória.</dd></div>
+          <div><dt>Tempo</dt><dd>Cerca de 1 a 3 horas por vídeo, quase todo com o computador trabalhando sozinho.</dd></div>
+        </dl>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="precos">
+  <div class="wrap">
+    <span class="eyebrow">Preços</span>
+    <h2 class="mt">Pagamento único. <span class="grad">O estúdio é seu.</span></h2>
+    <div class="prices">
+      <div class="plan sobe">
+        <h3>Essencial</h3>
+        <div class="price">R$ 47 <small>à vista</small></div>
+        <ul class="check">
+          <li>Estúdio completo e os 6 comandos</li>
+          <li>3 estilos e biblioteca de cenas</li>
+          <li>3 episódios de exemplo</li>
+          <li>Guia de instalação em PDF</li>
+        </ul>
+        <a class="btn ghost" href="#precos" data-checkout="essencial">Comprar o Essencial</a>
+      </div>
+      <div class="plan top sobe">
+        <span class="tag">MAIS ESCOLHIDO</span>
+        <h3>Completo</h3>
+        <div class="price">R$ 97 <small>à vista</small></div>
+        <ul class="check">
+          <li>Tudo do Essencial</li>
+          <li>Bônus: 50 temas e 30 ganchos</li>
+          <li>Atualizações por 12 meses: novas peças de cena e estilos</li>
+          <li>Acesso ao grupo de quem usa o estúdio</li>
+        </ul>
+        <a class="btn" href="#precos" data-checkout="completo">Quero o Completo <span class="seta" aria-hidden="true">→</span></a>
+      </div>
+      <div class="plan sobe">
+        <h3>Pro · para agências</h3>
+        <div class="price">R$ 197 <small>à vista</small></div>
+        <ul class="check">
+          <li>Tudo do Completo</li>
+          <li>Licença para fazer vídeos para clientes</li>
+          <li>Suporte por WhatsApp por 30 dias</li>
+          <li>Instalação acompanhada ao vivo (30 min)</li>
+        </ul>
+        <a class="btn ghost" href="#precos" data-checkout="pro">Comprar o Pro</a>
+      </div>
+    </div>
+    <div class="guarantee sobe">
+      <b class="grad">7 dias</b>
+      <p>Instale, faça seus vídeos e, se não for para você, peça o reembolso em até 7 dias pela própria plataforma de pagamento. Sem perguntas.</p>
+    </div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <span class="eyebrow">Perguntas</span>
+    <h2 class="mt">Dúvidas frequentes</h2>
+    <div class="faq">
+      <details><summary>Preciso saber programar ou editar vídeo?</summary><p>Não. Você conversa com o Claude em português. Ele roda os comandos, escreve a cena e monta o vídeo. A instalação é um arquivo de dois cliques.</p></details>
+      <details><summary>Funciona com o Claude grátis?</summary><p>Não. O estúdio usa o Claude Code, que vem nos planos pagos Pro e Max.</p></details>
+      <details><summary>Quanto custa cada vídeo?</summary><p>O estúdio não cobra por vídeo. O único gasto é a voz: um reel de 60 segundos usa cerca de 1.000 créditos do ElevenLabs.</p></details>
+      <details><summary>A voz é minha?</summary><p>Você escolhe qualquer voz do ElevenLabs, inclusive a sua clonada, se o seu plano permitir. O estúdio nunca troca para voz robótica: se faltar crédito, ele para e avisa.</p></details>
+      <details><summary>Meu computador é fraco. Funciona?</summary><p>Funciona, só demora mais no render. O estilo simples e o minimal são mais leves. Se o render parar, ele continua de onde estava.</p></details>
+      <details><summary>Posso fazer vídeos de política e notícia?</summary><p>Pode. O estúdio explica de forma neutra, atribui cada afirmação a quem disse e coloca as fontes na legenda do post.</p></details>
+      <details><summary>Minha chave do ElevenLabs fica segura?</summary><p>Ela fica num arquivo dentro da pasta do estúdio, no seu computador. O Claude é instruído a nunca pedir, mostrar ou copiar a chave.</p></details>
+      <details><summary>Como recebo o kit?</summary><p>Logo após a compra, você recebe o link para baixar a pasta do estúdio e o guia em PDF.</p></details>
+    </div>
+  </div>
+</section>
+
+<section class="final">
+  <div class="wrap">
+    <img src="img/logo.png" alt="">
+    <h2>Qual vai ser o seu <span class="grad">primeiro tema?</span></h2>
+    <a class="btn" href="#precos">Quero o meu estúdio <span class="seta" aria-hidden="true">→</span></a>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap"><span>© 2026 Estúdio Engrenagem · @engrenagem.br</span><span>Produto independente. Não é afiliado, patrocinado ou endossado pela Anthropic (Claude) nem pelo ElevenLabs. Resultados de visualização variam de perfil para perfil.</span></div>
+</footer>
+
+<script>
+// ===== Links de pagamento: cole aqui os links da Kiwify/Hotmart de cada plano =====
+const CHECKOUT = { essencial: "", completo: "", pro: "" };
+document.querySelectorAll("[data-checkout]").forEach(a => { const u = CHECKOUT[a.dataset.checkout]; if (u) { a.href = u; a.target = "_blank"; a.rel = "noopener"; } });
+
+const calmo = matchMedia("(prefers-reduced-motion: reduce)").matches;
+document.documentElement.classList.add("js");
+
+// poeira no ar do estúdio: partículas em 3 profundidades, cruzando os feixes de luz
+(() => {
+  const cv = document.getElementById("poeira"), g = cv.getContext("2d"); let W, H, P = [], dpr = Math.min(2, devicePixelRatio || 1);
+  const nova = (y) => { const z = Math.random(); return { x: Math.random() * W, y: y ?? Math.random() * H, z, r: (0.4 + z * 1.8) * dpr, vx: (0.05 + z * 0.25) * dpr, vy: (-0.08 - z * 0.22) * dpr, a: 0.15 + z * 0.55, f: Math.random() * 6.28 }; };
+  const tam = () => { W = cv.width = innerWidth * dpr; H = cv.height = innerHeight * dpr; const n = Math.round(Math.min(140, innerWidth * innerHeight / 9000)); P = Array.from({ length: n }, () => nova()); };
+  tam(); addEventListener("resize", tam);
+  let mx = 0.5, my = 0.5; addEventListener("pointermove", e => { mx = e.clientX / innerWidth; my = e.clientY / innerHeight; });
+  const desenha = (t) => {
+    g.clearRect(0, 0, W, H);
+    for (const p of P) {
+      if (!calmo) { p.x += p.vx + Math.sin(t / 2000 + p.f) * 0.15 * dpr; p.y += p.vy; if (p.y < -10 || p.x > W + 10) Object.assign(p, nova(H + 10), { x: Math.random() * W * 0.9 }); }
+      const px = p.x + (mx - 0.5) * 30 * p.z * dpr, py = p.y + (my - 0.5) * 20 * p.z * dpr;
+      const brilha = 0.6 + 0.4 * Math.sin(t / 900 + p.f);
+      const gr = g.createRadialGradient(px, py, 0, px, py, p.r * 3);
+      gr.addColorStop(0, `rgba(150,220,255,${p.a * brilha})`); gr.addColorStop(1, "rgba(0,160,255,0)");
+      g.fillStyle = gr; g.beginPath(); g.arc(px, py, p.r * 3, 0, 6.283); g.fill();
+    }
+    if (!calmo) requestAnimationFrame(desenha);
+  };
+  requestAnimationFrame(desenha);
+})();
+
+// celulares trocam de cena
+if (!calmo) document.querySelectorAll("[data-troca]").forEach((ph, k) => { const im = ph.querySelectorAll("img"); let i = 0;
+  setTimeout(() => setInterval(() => { im[i].classList.remove("on"); i = (i + 1) % im.length; im[i].classList.add("on"); }, 3600), k * 1200); });
+
+// esteira infinita: duplica a fila
+const tr = document.querySelector(".trilho"); tr.innerHTML += tr.innerHTML; tr.querySelectorAll("figure:nth-child(n+11)").forEach(f => f.setAttribute("aria-hidden", "true"));
+
+// brilho que segue o mouse nas peças
+document.querySelectorAll(".piece").forEach(el => el.addEventListener("pointermove", e => { const r = el.getBoundingClientRect(); el.style.setProperty("--mx", (e.clientX - r.left) + "px"); el.style.setProperty("--my", (e.clientY - r.top) + "px"); }));
+
+// entrada ao rolar: só o que está abaixo da tela espera; o resto já aparece pronto
+if ("IntersectionObserver" in window && !calmo) {
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.remove("espera"); io.unobserve(e.target); } }), { rootMargin: "0px 0px -8% 0px" });
+  document.querySelectorAll(".sobe").forEach((el, i) => { if (el.getBoundingClientRect().top > innerHeight) { el.classList.add("espera"); el.style.transitionDelay = (i % 3) * 90 + "ms"; io.observe(el); } });
+}
+
+// contador
+document.querySelectorAll("[data-conta]").forEach(el => { if (calmo) return; const fim = +el.dataset.conta; let t0;
+  const passo = (t) => { t0 ??= t; const k = Math.min(1, (t - t0) / 1600); el.textContent = Math.round(fim * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(passo); };
+  el.textContent = "0"; requestAnimationFrame(passo); });
+</script>
+</body>
+</html>
